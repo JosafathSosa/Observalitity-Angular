@@ -1,0 +1,13 @@
+<div class="gallery-container">
+  <h2 class="gallery-title">Galería de Imágenes</h2>
+
+  <div class="image-grid">
+    <img
+      *ngFor="let image of imageUrls"
+      [src]="image"
+      (load)="onImageLoad($event)"
+      alt="Imagen de la galería"
+      class="image-display"
+    />
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<p>Pokemon works!</p>
+
+<div class="pokemon-container">
+  <div class="pokemon-card">
+    <div class="pokemon-info">
+      <!-- Imagen del Pokémon -->
+      <img
+        [src]="pokemon?.sprites?.front_default"
+        alt="{{ pokemon?.name }}"
+        class="pokemon-img"
+      />
+
+      <!-- Nombre del Pokémon -->
+      <h2>{{ pokemon?.name | titlecase }}</h2>
+
+      <!-- Información adicional -->
+      <ul class="pokemon-details">
+        <li><strong>Height:</strong> {{ pokemon?.height }} decimetres</li>
+        <li><strong>Weight:</strong> {{ pokemon?.weight }} hectograms</li>
+        <li>
+          <strong>Types:</strong>
+          <span *ngFor="let type of pokemon?.types; let i = index">
+            {{ type.type.name | titlecase
+            }}<span *ngIf="i < pokemon.types.length - 1">, </span>
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
