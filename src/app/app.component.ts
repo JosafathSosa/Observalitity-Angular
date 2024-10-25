@@ -2,23 +2,23 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 
 //Importacion de librerias del rendimiento de la web
 import { onINP, onCLS, onFCP, onTTFB, onLCP } from 'web-vitals';
-import { RouterOutlet, Router, RouterModule } from '@angular/router';
-
+import { RouterModule } from '@angular/router';
 import { DatingComponent } from './dating/dating.component';
-
 //Importaciones de OpenTelemetry
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-
 import { Resource } from '@opentelemetry/resources';
 import { interval, Subscription } from 'rxjs';
 
 //Servicios
 import { CustomErrorHandler } from '../../src/app/_services/custom-error-handler.service';
 import { DependencyCheckerService } from '../../src/app/_services/dependency-checker.service';
+
+//Mis librerias
+import { WebVitalsService } from 'ngx-metrics-web';
 
 @Component({
   selector: 'app-root',
@@ -44,12 +44,13 @@ export class AppComponent implements OnInit, OnDestroy {
   // En el constructor de tu componente
   constructor(
     private customErrorHandler: CustomErrorHandler,
+    private webVitalsService: WebVitalsService,
     private dependencyChecker: DependencyCheckerService
   ) {}
 
   ngOnInit() {
     this.trackPageLoadTime();
-    this.webVitals();
+    this.webVitalsService.startWebVitalsCollection();
     this.trackAppStatus();
 
     const issues = this.dependencyChecker.checkAppComponentDependencies(this);
@@ -111,27 +112,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private pageLoadTime = this.meter.createHistogram('page_load_time', {
     description: 'Tiempo de carga de la página',
-  });
-
-  // Métricas de Web Vitals
-  private lcpHistogram = this.meter.createHistogram('lcp', {
-    description: 'Largest Contentful Paint',
-  });
-
-  private inpHistogram = this.meter.createHistogram('inp', {
-    description: 'Input Navigation Performance',
-  });
-
-  private clsHistogram = this.meter.createHistogram('cls', {
-    description: 'Cumulative Layout Shift',
-  });
-
-  private fcpHistogram = this.meter.createHistogram('fcp', {
-    description: 'First Contentful Paint',
-  });
-
-  private ttfbpHistogram = this.meter.createHistogram('ttfb', {
-    description: 'Time to First Byte',
   });
 
   // MÉTRICA PARA EL ESTADO DE LA APLICACIÓN (sin etiquetas)
@@ -207,44 +187,5 @@ export class AppComponent implements OnInit, OnDestroy {
       performance.timing.loadEventEnd - performance.timing.navigationStart;
     this.pageLoadTime.record(loadTime, { route: window.location.pathname });
     console.log('Tiempo de carga de la página registrado');
-  }
-
-  private webVitals() {
-    this.onCLS((metric) => {
-      this.clsHistogram.record(metric.value, {
-        name: metric.name,
-        rating: metric.rating,
-      });
-      console.log('CLS registrado:', metric);
-    });
-    this.onLCP((metric) => {
-      this.lcpHistogram.record(metric.value, {
-        name: metric.name,
-        rating: metric.rating,
-      });
-      console.log('LCP registrado:', metric);
-    });
-    this.onINP((metric) => {
-      this.inpHistogram.record(metric.value, {
-        name: metric.name,
-        rating: metric.rating,
-      });
-      console.log('INP registrado:', metric);
-    });
-
-    this.onFCP((metric) => {
-      this.fcpHistogram.record(metric.value, {
-        name: metric.name,
-        rating: metric.rating,
-      });
-      console.log('FCP registrado:', metric);
-    });
-    this.onTTFB((metric) => {
-      this.ttfbpHistogram.record(metric.value, {
-        name: metric.name,
-        rating: metric.rating,
-      });
-      console.log('TTFB registrado:', metric);
-    });
   }
 }

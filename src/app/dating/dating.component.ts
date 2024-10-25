@@ -6,11 +6,12 @@ import { RouterModule } from '@angular/router';
 import { CustomErrorHandler } from '../_services/custom-error-handler.service';
 import { FormsModule } from '@angular/forms';
 import { AccountService } from '../_services/AccountService.service';
+import { ButtonComponent } from 'ngx-banana-ui';
 
 @Component({
   selector: 'app-dating',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonComponent],
   templateUrl: './dating.component.html',
   styleUrls: ['./dating.component.css'],
 })
