@@ -1,7 +1,7 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { ErrorHandler } from '@angular/core'; // Importar ErrorHandler
 import { AppComponent } from './app/app.component';
-import { CustomErrorHandler } from './app/_services/custom-error-handler.service'; // Ajusta la ruta
+import { CustomErrorHandlerService } from 'ngx-metrics-web';
 import {
   MeterProvider,
   PeriodicExportingMetricReader,
@@ -34,7 +34,7 @@ const meterProvider = new MeterProvider({
 bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routeConfig),
-    { provide: ErrorHandler, useClass: CustomErrorHandler }, // Registrar CustomErrorHandler
+    { provide: ErrorHandler, useClass: CustomErrorHandlerService }, // Registrar CustomErrorHandler
     { provide: MeterProvider, useValue: meterProvider },
     // Registrar MeterProvider como proveedor
     provideHttpClient(),

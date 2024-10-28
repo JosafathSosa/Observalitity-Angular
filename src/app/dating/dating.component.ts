@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, inject, OnInit, output } from '@angular/core';
 import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { RouterModule } from '@angular/router';
-import { CustomErrorHandler } from '../_services/custom-error-handler.service';
+import { CustomErrorHandlerService } from 'ngx-metrics-web';
 import { FormsModule } from '@angular/forms';
 import { AccountService } from '../_services/AccountService.service';
 import { ButtonComponent } from 'ngx-banana-ui';
@@ -27,7 +27,9 @@ export class DatingComponent implements OnInit {
   cancelRegister = output<boolean>();
 
   // Inyecta el CustomErrorHandler con el tipo correcto
-  customErrorHandler: CustomErrorHandler = inject(CustomErrorHandler);
+  customErrorHandlerService: CustomErrorHandlerService = inject(
+    CustomErrorHandlerService
+  );
 
   showUsers = false;
 
@@ -75,7 +77,7 @@ export class DatingComponent implements OnInit {
           );
 
           // Llamar a CustomErrorHandler para manejar el error
-          this.customErrorHandler.handleError(error);
+          this.customErrorHandlerService.handleError(error);
 
           // Incrementar el contador de error
           this.requestCounter.add(1, {
@@ -127,7 +129,7 @@ export class DatingComponent implements OnInit {
         );
 
         // Llamar a CustomErrorHandler para manejar el error
-        this.customErrorHandler.handleError(error);
+        this.customErrorHandlerService.handleError(error);
 
         // Incrementar el contador de error
         this.requestCounter.add(1, {
