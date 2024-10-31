@@ -1,3 +1,4 @@
+// pokemon.component.ts
 import {
   AfterViewInit,
   Component,
@@ -5,8 +6,11 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import { CustomErrorHandlerService, HttpMetricsService } from 'ngx-metrics-web';
-import { MeterProvider } from '@opentelemetry/sdk-metrics';
+import {
+  CustomErrorHandlerService,
+  HttpMetricsService,
+  ComponentMetricsService,
+} from 'ngx-metrics-web';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -14,67 +18,59 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './pokemon.component.html',
-  styleUrl: './pokemon.component.css',
+  styleUrls: ['./pokemon.component.css'],
 })
 export class PokemonComponent implements OnInit, OnDestroy, AfterViewInit {
   private httpMetricsService = inject(HttpMetricsService);
-  private meterProvider = inject(MeterProvider);
-  private customErrorHandlerService: CustomErrorHandlerService = inject(
-    CustomErrorHandlerService
-  );
+  private customErrorHandlerService = inject(CustomErrorHandlerService);
+  private componentMetricsService = inject(ComponentMetricsService);
 
   pokemon: any;
-  startTime!: number;
 
-  constructor() {
-    // Marca el inicio del renderizado
-    performance.mark('component-start');
-  }
+  constructor() {}
 
   ngOnInit(): void {
+    // Inicia la sesión y la métrica de tiempo de renderizado
+    this.componentMetricsService.startSession();
+    this.componentMetricsService.startRender();
+
+    // Configura e incrementa el contador de visitas
+    this.componentMetricsService.configureVisitCounter(
+      'pokemon_page_visit_counter',
+      'Number of visits to the Pokemon page'
+    );
+    this.componentMetricsService.trackVisit('PokemonComponent');
+
+    // Configura el gauge de uso de memoria
+    this.componentMetricsService.configureMemoryUsage(
+      'pokemon_memory_usage',
+      'Memory usage for Pokemon component in MB'
+    );
+
+    // Cargar la API de Pokemon
     this.loadPokemonAPI();
-
-    // Incrementa el número de visitas en el componente
-    this.visitCounter.add(1, { page: 'pokemon' });
-    console.log('La página de Pokemon ha sido visitada.');
   }
-
-  ngOnDestroy(): void {}
 
   ngAfterViewInit(): void {
-    performance.mark('component-end');
-
-    performance.measure(
-      'PokemonComponent-render-time',
-      'component-start',
-      'component-end'
+    // Finaliza y registra el tiempo de renderizado
+    this.componentMetricsService.endRender(
+      'pokemon_render_time',
+      'Render time for Pokemon component'
     );
-
-    const entries = performance.getEntriesByName(
-      'PokemonComponent-render-time'
-    );
-    const renderTime = entries[0].duration;
-
-    this.renderTimePokemonHistogram.record(renderTime);
-    console.log(`El componente tardó ${renderTime} ms en renderizar`);
   }
 
-  // Métrica de visitas a la página
-  private visitCounter = this.meterProvider
-    .getMeter('angular-app')
-    .createCounter('page_visits_count', {
-      description: 'Numero de visitas',
-    });
+  ngOnDestroy(): void {
+    // Finaliza y registra la duración de la sesión
+    this.componentMetricsService.endSession(
+      'pokemon_session_duration',
+      'Duration of user session in Pokemon component'
+    );
 
-  // Histograma para tiempo de renderizado
-  private renderTimePokemonHistogram = this.meterProvider
-    .getMeter('angular-app')
-    .createHistogram('PokemonAPIComponent_render_time', {
-      description: 'Tiempo renderizado API component',
-      unit: 'ms',
-    });
+    // Registra el uso de memoria al destruir el componente
+    this.componentMetricsService.trackMemoryUsage();
+  }
 
-  // Método para cargar el API de Pokémon y registrar métricas
+  // Método para cargar el API de Pokémon y registrar métricas HTTP
   private loadPokemonAPI(): void {
     this.httpMetricsService
       .get('https://pokeapi.co/api/v2/pokemon/pikachu')
@@ -84,7 +80,7 @@ export class PokemonComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         error: (error) => {
           console.error('Error al cargar datos de Pokémon:', error);
-          this.customErrorHandlerService.handleError(error); // Manejo de error
+          this.customErrorHandlerService.handleError(error);
         },
         complete: () => {
           console.log('Solicitud completada a la API de Pokémon.');
