@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 
 //Importacion de librerias del rendimiento de la web
 import { onINP, onCLS, onFCP, onTTFB, onLCP } from 'web-vitals';
@@ -15,10 +15,13 @@ import { interval, Subscription } from 'rxjs';
 
 //Servicios
 import { CustomErrorHandler } from '../../src/app/_services/custom-error-handler.service';
-import { DependencyCheckerService } from '../../src/app/_services/dependency-checker.service';
 
 //Mis librerias
-import { WebVitalsService } from 'ngx-metrics-web';
+import {
+  WebVitalsService,
+  ComponentMetricsService,
+  DependencyIssuesService,
+} from 'ngx-metrics-web';
 
 @Component({
   selector: 'app-root',
@@ -31,7 +34,7 @@ import { WebVitalsService } from 'ngx-metrics-web';
   </main>`,
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   title = 'angular-app';
   private appStatusSubscription: Subscription | null = null;
 
@@ -45,20 +48,20 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private customErrorHandler: CustomErrorHandler,
     private webVitalsService: WebVitalsService,
-    private dependencyChecker: DependencyCheckerService
+
+    private componentMetricsService: ComponentMetricsService,
+    private dependencyIssuesService: DependencyIssuesService
   ) {}
 
   ngOnInit() {
-    this.trackPageLoadTime();
-    this.webVitalsService.startWebVitalsCollection();
     this.trackAppStatus();
-
-    const issues = this.dependencyChecker.checkAppComponentDependencies(this);
-    if (issues.length > 0) {
-      console.warn('Problemas detectados en AppComponent:', issues);
-      this.handleDependencyIssues(issues); // Enviar métrica de problema de importacion de librarias a Prometheus
-    }
-
+    this.componentMetricsService.startRender();
+    this.webVitalsService.startWebVitalsCollection();
+    this.dependencyIssuesService.verifyAndHandleDependencies(
+      this,
+      'web_vitals_issues',
+      'Problemas de dependencias de métricas de Web Vitals'
+    );
     /*Simula un error
     setTimeout(() => {
       throw new Error('Error intencional para probar el CustomErrorHandler');
@@ -74,6 +77,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Registrar el listener del evento `beforeunload` para cuando la página se cierra o recarga
     window.addEventListener('beforeunload', this.handleBeforeUnload);
+  }
+
+  ngAfterViewInit(): void {
+    this.componentMetricsService.endRender(
+      'appComponent_render_time',
+      'Render time for App component'
+    );
   }
 
   ngOnDestroy() {
@@ -104,15 +114,6 @@ export class AppComponent implements OnInit, OnDestroy {
   });
 
   private meter = this.meterProvider.getMeter('angular-app');
-
-  // Métricas a enviar
-  private buttonClickCount = this.meter.createCounter('button_click_count', {
-    description: 'Número de clics en el botón',
-  });
-
-  private pageLoadTime = this.meter.createHistogram('page_load_time', {
-    description: 'Tiempo de carga de la página',
-  });
 
   // MÉTRICA PARA EL ESTADO DE LA APLICACIÓN (sin etiquetas)
   private appStatusGauge = this.meter.createObservableGauge('app_status', {
@@ -174,18 +175,5 @@ export class AppComponent implements OnInit, OnDestroy {
     this.appStatusSubscription = interval(15000).subscribe(() => {
       console.log('Aplicación activa, enviando métrica de estado.');
     });
-  }
-
-  // Funciones que agregan y mandan las otras métricas
-  public trackButtonClick() {
-    this.buttonClickCount.add(1, { action: 'button_click' });
-    console.log('Botón clickeado. Métrica enviada al backend');
-  }
-
-  private trackPageLoadTime() {
-    const loadTime =
-      performance.timing.loadEventEnd - performance.timing.navigationStart;
-    this.pageLoadTime.record(loadTime, { route: window.location.pathname });
-    console.log('Tiempo de carga de la página registrado');
   }
 }
