@@ -34,18 +34,7 @@ export class DatingComponent implements OnInit {
   showUsers = false;
 
   constructor() {
-    const meter = this.meterProvider.getMeter('angular-app');
-
-    this.requestHistogram = meter.createHistogram(
-      'http_request_duration_seconds',
-      {
-        description: 'Mide el tiempo de respuesta de las peticiones HTTP GET',
-      }
-    );
-
-    this.requestCounter = meter.createCounter('http_request_status_count', {
-      description: 'Cuenta la cantidad de respuestas HTTP por código de estado',
-    });
+    
   }
 
   ngOnInit(): void {}
@@ -73,49 +62,17 @@ export class DatingComponent implements OnInit {
   }
 
   register(): void {
-    const startTime = performance.now();
-    this.accountService.register(this.model).subscribe({
-      next: (response) => {
-        console.log(response);
-
-        // Incrementar contador de éxito (200)
-        console.log('Incrementando contador para código de estado 200');
-        this.requestCounter.add(1, {
-          method: 'POST',
-          status: '200',
-          url: 'https://localhost:5001/api/account/register',
-        });
-        this.cancel();
-      },
-      error: (error) => {
-        console.log(error);
-        const statusCode = error.status || 'unknown';
-        console.log(
-          `Incrementando contador para código de estado ${statusCode}`
-        );
-
-        // Llamar a CustomErrorHandler para manejar el error
-        this.customErrorHandlerService.handleError(error);
-
-        // Incrementar el contador de error
-        this.requestCounter.add(1, {
-          method: 'POST',
-          status: statusCode.toString(),
-          url: 'https://localhost:5001/api/account/register',
-        });
-      },
-      complete: () => {
-        const endTime = performance.now();
-        const duration = (endTime - startTime) / 1000;
-        this.requestHistogram.record(duration, {
-          method: 'POST',
-          status: '200',
-          url: 'https://localhost:5001/api/account/register',
-        });
-
-        console.log(`Request completed in ${duration} seconds`);
-      },
-    });
+    this.httpMetricsService
+      .post('https://localhost:5001/api/account/register', this.model)
+      .subscribe({
+        next: (response) => {
+          this.cancel();
+        },
+        error: (error) => {
+          this.customErrorHandlerService.handleError(error);
+        },
+        complete: () => {},
+      });
   }
   cancel(): void {
     this.cancelRegister.emit(false);
